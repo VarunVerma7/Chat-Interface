@@ -1,11 +1,21 @@
 var moment = require('moment');
+var {Message} = require('../server.js');
+var generateMessage = (from, text, time) => {
+  if (!time) {
+    return {
+      from,
+      text,
+      createdAt: moment().valueOf()
+    };
+  } else {
+    return {
+      from,
+      text,
+      createdAt: moment(time)
+    }
+  }
 
-var generateMessage = (from, text) => {
-  return {
-    from,
-    text,
-    createdAt: moment().valueOf()
-  };
+
 };
 
 var generateLocationMessage = (from, latitude, longitude) => {
@@ -16,4 +26,7 @@ var generateLocationMessage = (from, latitude, longitude) => {
   };
 };
 
-module.exports = {generateMessage, generateLocationMessage};
+module.exports = {
+  generateMessage,
+  generateLocationMessage
+};

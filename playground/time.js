@@ -12,10 +12,4 @@ var moment = require('moment');
 
 // 10:35 am
 // 6:01 am
-
-var someTimestamp = moment().valueOf();
-console.log(someTimestamp)
-
-var createdAt = 1234;
-var date = moment(createdAt);
-console.log(date.format('h:mm a'))
+console.log(typeof moment(12312312).format('h:mm a'));
