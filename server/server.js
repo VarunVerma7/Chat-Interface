@@ -20,7 +20,7 @@ var users = new Users();
 var rooms = [];
 mongoose.Promise = global.Promise;
 mongoose.connect('mongodb://localhost:27017/MessageSaver');
-
+var loadedMessages = 0;
 var messageSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -39,21 +39,15 @@ var messageSchema = new mongoose.Schema({
 app.use(express.static(publicPath));
 
 io.on('connection', (socket) => {
-
-
   socket.on('join', (params, callback) => {
     if (!isRealString(params.name) || !isRealString(params.room)) {
       return callback('Name and room name are required.');
     }
-
     params.room = params.room.toUpperCase();
-
     socket.join(params.room);
     if (!(rooms.includes(params.room))) {
       rooms.push(params.room)
     }
-
-
     // Dont let users use a name thats taken
     var usernames = users.getUserList(params.room);
     for (var i = 0; i < usernames.length; i++) {
@@ -63,12 +57,16 @@ io.on('connection', (socket) => {
     }
     users.removeUser(socket.id);
     users.addUser(socket.id, params.name, params.room);
-
-
     io.to(params.room).emit('updateUserList', users.getUserList(params.room));
-
-
-
+    console.log(params.room);
+    console.log(messageSchema.obj);
+    // Here is the code that is supposed to use the model name to search the database
+    mongoose.model(`${params.room}`, messageSchema).find({}).then((db) => {
+      console.log(db);
+      db.map((doc) => {
+        socket.emit('newMessage', generateMessage(doc.username, doc.message));
+      })
+    });
     socket.emit('newMessage', generateMessage('Admin', 'Welcome to the chat app'));
 
 
@@ -77,6 +75,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('createMessage', (message, callback) => {
+
     var user = users.getUser(socket.id);
 
     if (user && isRealString(message.text)) {
@@ -89,17 +88,8 @@ io.on('connection', (socket) => {
         time: moment().format('h:mm a'),
         message: message.text
       });
-      // mongoose.model(`${user.room}`, messageSchema).find({}).then((db) => {
-      //   db.map((doc) => {
-      //     socket.emit('newMessage', generateMessage(doc.username, doc.message));
-      //   })
-      // });
-      mongoose.model(`${user.room}`, messageSchema).find({}).then((db) => {
-        console.log(db);
-        db.map((doc) => {
-          socket.emit('newMessage', generateMessage(doc.username, doc.message));
-        })
-      });
+
+
       newMessage.save().then((message) => {
         // console.log('message saved')
       }, (e) => {
